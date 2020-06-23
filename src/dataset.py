@@ -6,13 +6,15 @@ from PIL import Image
 import librosa
 from utils import *
 #import audiomentations
+import warnings
+warnings.filterwarnings('ignore')
 
 
-BASE_DIR = "./input/train_audio/"
+BASE_DIR = "../input/train_audio/"
 
 class BirdDatasetTrain:
     def __init__(self, folds,freq_mask=False, crop = 512):
-        df = pd.read_csv("./input/train_folds.csv")
+        df = pd.read_csv("../input/train_folds.csv")
 
         df = df[["filename","ebird_code", "ebird_lbl", "duration", "kfold"]]
         df = df[df.kfold.isin(folds)].reset_index(drop=True)
