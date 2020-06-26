@@ -10,10 +10,10 @@ import warnings
 warnings.filterwarnings('ignore')
 
 
-BASE_DIR = "../input/train_audio/"
+BASE_DIR = "../input/mel_pickles/"
 
 class BirdDatasetTrain:
-    def __init__(self, folds,freq_mask=False, crop = 512):
+    def __init__(self, folds,freq_mask=True, train= True,crop = 512):
         df = pd.read_csv("../input/train_folds.csv")
 
         df = df[["filename","ebird_code", "ebird_lbl", "duration", "kfold"]]
@@ -23,24 +23,32 @@ class BirdDatasetTrain:
         self.ebird_codes = df.ebird_code.values
         self.freq_mask = freq_mask
         self.crop = crop 
-    
+        self.train = train
+        self.num_classes = 264    
+
     def __len__(self):
         return (len(self.filenames))
 
-    
-    def __getitem__ (self,item):
-        fp = BASE_DIR + self.ebird_codes[item] + "/" +self.filenames[item]
-        mel_spec = build_spectogram(fp)
-        mel_spec = do_random_crop(mel_spec, self.crop)
+    def ohe (self,x):
+        one_hot = np.zeros((len(self.num_classes)))
+        one_hot[x] = 1
+        return one_hot
 
-        mel_spec = (mel_spec - mel_spec.mean()) / (mel_spec.std()+1e-7)
-        
+    def __getitem__ (self,item):
+        fp = BASE_DIR +self.filenames[item].split(".")[0]+".pkl"
+        mel_spec = joblib.load(fp)
+        #mel_spec = do_random_crop(mel_spec, self.crop)
+
+        #mel_spec = (mel_spec - mel_spec.mean()) / (mel_spec.std()+1e-7)
         if self.freq_mask:
             mel_spec = freq_mask(mel_spec)
         
-        mel_spec = mel_spec.reshape([1,mel_spec.shape[0],mel_spec.shape[1]])
+        #mel_spec = mel_spec.reshape([1,mel_spec.shape[0],mel_spec.shape[1]])
+        
+        ohe_label = ohe(self.ebird_lbls[item])
+
         return {
             "audio": torch.tensor(mel_spec,dtype=torch.float),
-            "ebird_lbl":torch.tensor(self.ebird_lbls[item], dtype=torch.long)
+            "ebird_lbl":torch.tensor(ohe_label, dtype=torch.long)
         }
         

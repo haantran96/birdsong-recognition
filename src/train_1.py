@@ -21,7 +21,7 @@ CROPS = int(os.environ.get("CROPS"))
 
 
 def loss_fn(output,label):
-    l1 = nn.CrossEntropyLoss(output,label)
+    l1 = nn.BCELoss()(output,label)
     return l1
 
 
@@ -34,11 +34,12 @@ def train(dataset, data_loader, model, optimizer):
 
         audio = audio.to(DEVICE, dtype=torch.float)
         label = label.to(DEVICE, dtype = torch.long)
-        print("LABEL", label)
         optimizer.zero_grad()
         output = model(audio)
+        proba = output["multilabel_proba"]
+        print(proba)
 
-        loss = loss_fn(output, label)
+        loss = loss_fn(proba, label)
 
         loss.backward()
         optimizer.step()
@@ -59,8 +60,9 @@ def evaluate(dataset, data_loader, model):
         label = label.to(DEVICE, dtype = torch.long)
         
         outputs = model(audio)
+        proba = outputs["multilabel_proba"].detach().cpu().numpy
 
-        loss = loss_fn(outputs, label)
+        loss = loss_fn(outputs, proba)
 
         final_loss += loss
         if (bi % 100 == 0):
